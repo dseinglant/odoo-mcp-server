@@ -16,6 +16,7 @@ class OdooConfig(BaseModel):
     username: str = Field(..., description="Odoo username (e.g. email)")
     password: Optional[str] = Field(None, description="Odoo password")
     api_key: Optional[str] = Field(None, description="Odoo API key")
+    read_only: bool = Field(False, description="Read-only mode (disable modification tools)")
     timeout: int = Field(120, description="Request timeout in seconds")
 
     def model_post_init(self, __context: Any) -> None:

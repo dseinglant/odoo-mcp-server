@@ -34,6 +34,7 @@ def get_odoo_client() -> OdooClient:
                 username=os.environ["ODOO_USERNAME"],
                 password=os.environ.get("ODOO_PASSWORD"),
                 api_key=os.environ.get("ODOO_API_KEY"),
+                read_only=os.environ.get("ODOO_READ_ONLY", "false").lower() == "true",
                 timeout=int(os.environ.get("ODOO_TIMEOUT", "120")),
             )
             odoo_client = OdooClient(config)
@@ -46,7 +47,10 @@ def get_odoo_client() -> OdooClient:
 @server.list_tools()
 async def list_tools() -> List[Tool]:
     """List available tools."""
-    return [
+    """List available tools."""
+    client = get_odoo_client()
+    
+    tools = [
         Tool(
             name="search_records",
             description="Search for Odoo records",
@@ -88,66 +92,73 @@ async def list_tools() -> List[Tool]:
                 "required": ["model"],
             },
         ),
-        Tool(
-            name="create_record",
-            description="Create a new Odoo record",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "model": {
-                        "type": "string",
-                        "description": "Odoo model name",
+    ]
+
+    if not client.config.read_only:
+        tools.extend([
+            Tool(
+                name="create_record",
+                description="Create a new Odoo record",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "model": {
+                            "type": "string",
+                            "description": "Odoo model name",
+                        },
+                        "values": {
+                            "type": "object",
+                            "description": "Field values for the new record",
+                        },
                     },
-                    "values": {
-                        "type": "object",
-                        "description": "Field values for the new record",
-                    },
+                    "required": ["model", "values"],
                 },
-                "required": ["model", "values"],
-            },
-        ),
-        Tool(
-            name="update_record",
-            description="Update existing Odoo records",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "model": {
-                        "type": "string",
-                        "description": "Odoo model name",
+            ),
+            Tool(
+                name="update_record",
+                description="Update existing Odoo records",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "model": {
+                            "type": "string",
+                            "description": "Odoo model name",
+                        },
+                        "ids": {
+                            "type": "array",
+                            "description": "List of record IDs to update",
+                            "items": {"type": "integer"},
+                        },
+                        "values": {
+                            "type": "object",
+                            "description": "Field values to update",
+                            },
                     },
-                    "ids": {
-                        "type": "array",
-                        "description": "List of record IDs to update",
-                        "items": {"type": "integer"},
-                    },
-                    "values": {
-                        "type": "object",
-                        "description": "Field values to update",
-                    },
+                    "required": ["model", "ids", "values"],
                 },
-                "required": ["model", "ids", "values"],
-            },
-        ),
-        Tool(
-            name="delete_record",
-            description="Delete Odoo records",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "model": {
-                        "type": "string",
-                        "description": "Odoo model name",
+            ),
+            Tool(
+                name="delete_record",
+                description="Delete Odoo records",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "model": {
+                            "type": "string",
+                            "description": "Odoo model name",
+                        },
+                        "ids": {
+                            "type": "array",
+                            "description": "List of record IDs to delete",
+                            "items": {"type": "integer"},
+                        },
                     },
-                    "ids": {
-                        "type": "array",
-                        "description": "List of record IDs to delete",
-                        "items": {"type": "integer"},
-                    },
+                    "required": ["model", "ids"],
                 },
-                "required": ["model", "ids"],
-            },
-        ),
+            ),
+        ])
+
+    tools.extend([
         Tool(
             name="get_record",
             description="Get specific Odoo records by ID",
@@ -207,7 +218,9 @@ async def list_tools() -> List[Tool]:
                 "required": ["model"],
             },
         ),
-    ]
+    ])
+
+    return tools
 
 
 @server.call_tool()

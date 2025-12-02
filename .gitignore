@@ -138,7 +138,7 @@ dmypy.json
 Thumbs.db
 
 # Test files
-test_*.py
+
 
 # Local configuration
 *.local
@@ -177,8 +177,7 @@ venv.bak/
 Thumbs.db
 
 # Test files
-test_*.py
-tests/
+
 
 # Coverage
 .coverage
